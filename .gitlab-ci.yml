@@ -1,0 +1,60 @@
+image: maven:3-jdk-11
+variables:
+  APP_NAME: dcipay-api
+
+
+stages:
+  - build
+  - test
+  - package
+  - doc
+  - deploy
+
+construccion:
+  stage: build
+  only:
+    - develop
+  script:
+    - mvn clean
+    - mvn compile
+
+pruebas:
+  stage: test
+  only:
+    - develop
+  script:
+    - mvn test
+
+empaquetamiento:
+  stage: package
+  only:
+    - develop
+  script:
+    - mvn clean
+    - mvn package -B
+  artifacts:
+    paths:
+      - target/*.jar
+
+documentacion:
+  stage: doc
+  only:
+    - develop
+  script:
+    - mvn javadoc:javadoc
+  artifacts:
+    name: $APP_DOC_NAME
+    when: on_success
+    paths:
+      - docs/*
+
+deploy:
+  stage: deploy
+  only:
+    - develop
+  image: ruby:latest
+  script:
+    - apt-get update -qy
+    - apt-get install -y ruby-dev
+    - gem install dpl
+    - dpl --provider=heroku --app=$APP_NAME --api-key=$HEROKU_API_KEY
